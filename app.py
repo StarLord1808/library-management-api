@@ -26,12 +26,13 @@ def login():
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('SELECT * FROM user WHERE email = % s AND password = % s', (email, password, ))
         user = cursor.fetchone()
+        # print(user) 
         if user:
             session['loggedin'] = True
-            session['userid'] = user['id']
-            session['name'] = user['first_name']
-            session['email'] = user['email']
-            session['role'] = user['role']
+            session['userid'] = user['ID']
+            session['name'] = user['FIRST_NAME']
+            session['email'] = user['EMAIL']
+            session['role'] = user['ROLE']
             mesage = 'Logged in successfully !'            
             return redirect(url_for('dashboard'))
         else:
@@ -147,8 +148,9 @@ def logout():
 @app.route('/register', methods =['GET', 'POST'])
 def register():
     mesage = ''
-    if request.method == 'POST' and 'name' in request.form and 'password' in request.form and 'email' in request.form :
-        userName = request.form['name']
+    if request.method == 'POST' and 'FirstName' in request.form and 'LastName' in request.form and  'password' in request.form and 'email' in request.form :
+        firstName = request.form['FirstName']
+        lastName = request.form['LastName']
         password = request.form['password']
         email = request.form['email']
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -158,10 +160,10 @@ def register():
             mesage = 'Account already exists !'
         elif not re.match(r'[^@]+@[^@]+\.[^@]+', email):
             mesage = 'Invalid email address !'
-        elif not userName or not password or not email:
+        elif not firstName or not lastName or not password or not email:
             mesage = 'Please fill out the form !'
         else:
-            cursor.execute('INSERT INTO user VALUES (NULL, % s, % s, % s)', (userName, email, password, ))
+            cursor.execute('INSERT INTO user VALUES (NULL, % s, % s, % s, % s, "USER")', (firstName, lastName, email, password))
             mysql.connection.commit()
             mesage = 'You have successfully registered !'
     elif request.method == 'POST':
