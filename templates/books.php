@@ -11,44 +11,22 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Fetch books from database
-$sql = "SELECT A.BOOKID ID, A.NAME TITLE, B.NAME AUTHOR, YEAR(A.ADDED_ON) FROM BOOK A INNER JOIN (SELECT NAME,AUTHORID FROM AUTHOR)B ON B.AUTHORID = A.AUTHORID";
-$result = $conn->query($sql);
+// Fetch book counts from database
+$totalBooksSql = "SELECT COUNT(*) AS total FROM book";
+$totalBooksResult = $conn->query($totalBooksSql);
+$totalBooks = $totalBooksResult->fetch_assoc()['total'];
 
-?>
+$availableBooksSql = "SELECT COUNT(*) AS available FROM book WHERE status = 'ENABLE'";
+$availableBooksResult = $conn->query($availableBooksSql);
+$availableBooks = $availableBooksResult->fetch_assoc()['available'];
 
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Library Management - Books</title>
-</head>
-<body>
-    <h1>Books List</h1>
-    <table border="1">
-        <tr>
-            <th>ID</th>
-            <th>Title</th>
-            <th>Author</th>
-            <th>Published Year</th>
-        </tr>
-        <?php
-        if ($result->num_rows > 0) {
-            while($row = $result->fetch_assoc()) {
-                echo "<tr>
-                        <td>" . $row["id"] . "</td>
-                        <td>" . $row["title"] . "</td>
-                        <td>" . $row["author"] . "</td>
-                        <td>" . $row["published_year"] . "</td>
-                      </tr>";
-            }
-        } else {
-            echo "<tr><td colspan='4'>No books found</td></tr>";
-        }
-        ?>
-    </table>
-</body>
-</html>
+$returnedBooksSql = "SELECT COUNT(*) AS returned FROM issued_book WHERE status = 'RETURNED'";
+$returnedBooksResult = $conn->query($returnedBooksSql);
+$returnedBooks = $returnedBooksResult->fetch_assoc()['returned'];
 
-<?php
+$issuedBooksSql = "SELECT COUNT(*) AS issued FROM issued_book WHERE status = 'ISSUED'";
+$issuedBooksResult = $conn->query($issuedBooksSql);
+$issuedBooks = $issuedBooksResult->fetch_assoc()['issued'];
+
 $conn->close();
 ?>
