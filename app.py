@@ -4,7 +4,8 @@ import MySQLdb.cursors
 import re
 import os
 import sys
-  
+from flask import Flask, render_template, jsonify
+import requests
   
 app = Flask(__name__)
    
@@ -41,9 +42,14 @@ def login():
     
 @app.route("/dashboard", methods =['GET', 'POST'])
 def dashboard():
-    if 'loggedin' in session:        
-        return render_template("dashboard.html")
-    return redirect(url_for('login'))    
+    if 'loggedin' in session:
+        data = get_book_counts()
+        return render_template('dashboard.html',
+                               total_books=data['totalBooks'],
+                               available_books=data['availableBooks'],
+                               returned_books=data['returnedBooks'],
+                               issued_books=data['issuedBooks'])
+    return redirect(url_for('login'))
     
 @app.route("/users", methods =['GET', 'POST'])
 def users():
@@ -104,6 +110,31 @@ def view_user():
         user = cursor.fetchone()   
         return render_template("view_user.html", user = user)
     return redirect(url_for('login'))
+
+@app.route("/get_books", methods =['GET', 'POST'])
+def get_book_counts():
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    
+    cursor.execute("SELECT COUNT(*) AS total FROM book")
+    total_books = cursor.fetchone()['total']
+    
+    cursor.execute("SELECT COUNT(*) AS available FROM book WHERE status = 'ENABLE'")
+    available_books = cursor.fetchone()['available']
+    
+    cursor.execute("SELECT COUNT(*) AS returned FROM issued_book WHERE status = 'RETURNED'")
+    returned_books = cursor.fetchone()['returned']
+    
+    cursor.execute("SELECT COUNT(*) AS issued FROM issued_book WHERE status = 'ISSUED'")
+    issued_books = cursor.fetchone()['issued']
+    
+    cursor.close()
+    
+    return {
+        'totalBooks': total_books,
+        'availableBooks': available_books,
+        'returnedBooks': returned_books,
+        'issuedBooks': issued_books
+    }
     
 @app.route("/password_change", methods =['GET', 'POST'])
 def password_change():
@@ -238,11 +269,10 @@ def save_book():
             
             if action == 'updateBook':
                 bookId = request.form['bookid']
-                cursor.execute('UPDATE book SET name= %s, status= %s, isbn= %s, no_of_copy= %s, categoryid= %s, authorid=%s, rackid= %s, publisherid= %s WHERE bookid = %s', (bookName, status, isbn, no_of_copy, category, author, rack, publisher, (bookId, ), ))
+                cursor.execute('UPDATE book SET name= %s, status= %s, isbn= %s, no_of_copy= %s, categoryid= %s, authorid=%s, rackid= %s, publisherid= %s WHERE bookid = %s', (bookName, status, isbn, no_of_copy, category, author, rack, publisher, bookId))
                 mysql.connection.commit()   
             else:
-                cursor.execute('INSERT INTO book (`name`, `status`, `isbn`, `no_of_copy`, `categoryid`, `authorid`, `rackid`, `publisherid`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)', (bookName, status, isbn, no_of_copy, category
-    , author, rack, publisher))
+                cursor.execute('INSERT INTO book (`name`, `isbn`, `no_of_copy`, `authorid`, `publisherid`,`categoryid`,  `rackid`, `status`,`picture`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s,%s)', (bookName,  isbn, no_of_copy,author,  publisher,category,rack,status,bookName))
                 mysql.connection.commit()           
             return redirect(url_for('books'))        
         elif request.method == 'POST':
